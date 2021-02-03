@@ -10,11 +10,11 @@ It is specifically tailored and tested on the following setup.
 ### Previous work
 This patch is based on [Asterisk-AMR repo](https://github.com/ceranext/asterisk-amr), which adds a decent support for the RTP AMR codec ([RFC 4867](https://tools.ietf.org/html/rfc4867)) to Asterisk. 
 For it to work, the peer must also speak this RFC, which is indeed the case in proper PBX-PBX links,
-including the UMTS **Nb** interface (*MGW<--->PBX*).
+including the UMTS **Nb** interface (*MGW<--->PBX*).\
 **However**, UMTS voice calls don't use the RFC spec over the **Iu** interface  (*RNC<--->MGW*).
 Instead, it introduces a whole new protocol layer above RTP, named **IuUP** (specifically SMpSDU version 1), 
-which is described by [3GPP TS 25.415 (Release 99 Only!)](https://portal.etsi.org/webapp/workprogram/Report_WorkItem.asp?WKI_ID=17324) and a few others mentioned below.
-Thes specs are incompatible with the RFC spec, furthermore there's no SDP definition for using IuUP.
+which is described by [3GPP TS 25.415 (Release 99 Only!)](https://portal.etsi.org/webapp/workprogram/Report_WorkItem.asp?WKI_ID=17324) and a few others mentioned below.\
+These specs are incompatible with the RFC spec, furthermore there's no SDP definition for using IuUP.
 Therefore a proper UMTS-aware MGW is required to interconnect the two interfaces by translating between the 
 3GPP and RFC specs:
 ```
@@ -25,8 +25,8 @@ Thus the above patch is insufficient when using **osmo-mgw**, which only bridges
 
 *Other essential 3GPP TS specs for this matter are: **25.414, 26.102, 26.103, 29.414**.*
 ### Solution
-As mentioned above, the proper generic solution **should have** been in the MGW, and not at all in the PBX (Asterisk).
-**Instead**, for simplicity of implementation of the POC, this patch **is** in Asterisk and works as follows:
+As mentioned above, the proper generic solution **should have** been in the MGW, and not at all in the PBX (Asterisk).\
+**Instead**, for simplicity of implementation of the POC, this patch **is** in Asterisk and works as follows:\
 The IuUP data packets are exchanged directly between the RNC and Asterisk, transparently passing through **osmo-mgw**.
 Since **SIP/SDP** have no IuUP concept, the negotiation between osmo-mgw and Asterisk keeps on using 
 RFC 4867, therefore breaking the spec and interoperability:
@@ -41,10 +41,10 @@ This only affects the narrowband variant of the codec, namely **AMR-NB ("AMR/800
 When IuUP mode is enabled, the AMR-specific attributes received in the SDP are ignored.
 
 ### Building Asterisk
-Regardless of this patch, the AMR codec requires the installation of OpenCORE AMR, for example in Debian/Ubuntu:
+Regardless of this patch, the AMR codec requires the installation of OpenCORE AMR, for example in Debian/Ubuntu:\
 `apt install libopencore-amrnb-dev libopencore-amrwb-dev libvo-amrwbenc-dev`
 
-The simplest way to enable IuUP mode is during configuration phase:
+The simplest way to enable IuUP mode is during configuration phase:\
 `./configure ... CFLAGS="-DAMR_RTP_SPEC_IUUP_INSTEAD_OF_RFC"`
 
 The rest of the build process remains the same.
