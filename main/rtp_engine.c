@@ -3622,7 +3622,9 @@ int ast_rtp_engine_init(void)
 	set_next_mime_type(ast_format_opus, 0,  "audio", "opus", 48000);
 	set_next_mime_type(ast_format_vp8, 0,  "video", "VP8", 90000);
 	set_next_mime_type(ast_format_vp9, 0, "video", "VP9", 90000);
-
+	set_next_mime_type(ast_format_amr, 0,  "audio", "AMR", 8000);    
+	set_next_mime_type(ast_format_amrwb, 0,  "audio", "AMR-WB", 16000);    
+    
 	/* Define the static rtp payload mappings */
 	add_static_payload(0, ast_format_ulaw, 0);
 	#ifdef USE_DEPRECATED_G726
@@ -3662,12 +3664,18 @@ int ast_rtp_engine_init(void)
 	add_static_payload(105, ast_format_t140_red, 0);   /* Real time text chat (with redundancy encoding) */
 	add_static_payload(106, ast_format_t140, 0);     /* Real time text chat */
 	add_static_payload(107, ast_format_opus, 0);
+    
+    // Specifically use 112 for AMR-NB because this is the only one currently
+    // supported by osmo-msc and osmo-sip-connector.
+	add_static_payload(112, ast_format_amr, 0);    
+	add_static_payload(113, ast_format_amrwb, 0);    
+    
 	add_static_payload(108, ast_format_vp9, 0);
 	add_static_payload(109, ast_format_h265, 0);
 
 	add_static_payload(110, ast_format_speex, 0);
 	add_static_payload(111, ast_format_g726, 0);
-	add_static_payload(112, ast_format_g726_aal2, 0);
+	add_static_payload(114, ast_format_g726_aal2, 0);
 
 	add_static_payload(115, ast_format_siren14, 0);
 	add_static_payload(116, ast_format_g719, 0);
@@ -3965,5 +3973,18 @@ int ast_rtp_get_rate(const struct ast_format *format)
 	 * as having a sample rate of 8kHz, while implementations must know that its
 	 * real rate is 16kHz. Seriously.
 	 */
-        return (ast_format_cmp(format, ast_format_g722) == AST_FORMAT_CMP_EQUAL) ? 8000 : (int)ast_format_get_sample_rate(format);
+    if (ast_format_cmp(format, ast_format_g722) == AST_FORMAT_CMP_EQUAL) {
+        return 8000;
+#ifdef AMR_RTP_SPEC_IUUP_INSTEAD_OF_RFC
+    /*
+     * For IuUP mode, 3GPP TS 25.414 section 5.1.3.3.1.8 requires a 16KHz rate for the RTP
+     * timestamps (regardless of codec and whether it's NB/WB), but in RFC 4867 AMR-NB uses 8KHz clock,
+     * so we apply here the same patch as above (for G.722), but in the reverse direction.
+     * Another part of this patch is in res_rtp_asterisk.c:rtp_raw_write().
+     */
+    } else if (ast_format_cmp(format, ast_format_amr) == AST_FORMAT_CMP_EQUAL) {
+        return 16000;
+#endif // AMR_RTP_SPEC_IUUP_INSTEAD_OF_RFC
+    }
+    return (int)ast_format_get_sample_rate(format);
 }

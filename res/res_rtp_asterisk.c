@@ -4737,6 +4737,17 @@ static int rtp_raw_write(struct ast_rtp_instance *instance, struct ast_frame *fr
 	if (ast_format_cmp(frame->subclass.format, ast_format_g722) == AST_FORMAT_CMP_EQUAL) {
 		frame->samples /= 2;
 	}
+        
+#ifdef AMR_RTP_SPEC_IUUP_INSTEAD_OF_RFC
+    /*
+     * This is another part of the patch explained in rtp_engine.c:ast_rtp_get_rate().
+     */
+	if (ast_format_cmp(frame->subclass.format, ast_format_amr) == AST_FORMAT_CMP_EQUAL) {
+        // TODO: In AMR-WB this will destroy everything. Need to do it only in AMR-NB.
+		frame->samples *= 2;
+	}
+#endif // AMR_RTP_SPEC_IUUP_INSTEAD_OF_RFC
+    
 
 	if (rtp->sending_digit) {
 		return 0;
